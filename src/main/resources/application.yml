@@ -1,0 +1,26 @@
+server:
+  port: 5000
+
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+      health:
+        enabled: true
+        show-details: always
+
+aws:
+  region: ${REGION:ap-southeast-1}
+
+hook:
+  http:
+    max-connections: 30
+    max-connections-per-route: 10
+    connection-request-timeout: 2000
+    connect-timeout: 2000
+    read-timeout: 2000
+
+
+forwarding:
+  sqs:
+    url:
