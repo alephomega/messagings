@@ -5,6 +5,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,7 +19,7 @@ public class Forwarder {
     private final String queueUrl;
 
     @Autowired
-    public Forwarder(AmazonSQS sqs, String queueUrl) {
+    public Forwarder(AmazonSQS sqs, @Value("${forwarding.sqs.url}") String queueUrl) {
         this.sqs = sqs;
         this.queueUrl = queueUrl;
     }

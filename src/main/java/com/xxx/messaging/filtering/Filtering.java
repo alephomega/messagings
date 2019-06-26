@@ -9,10 +9,10 @@ import com.xxx.messaging.Phase;
 import java.util.List;
 import java.util.Map;
 
-public class MessageFiltering extends Phase {
+public class Filtering extends Phase {
     private final List<Filter> filters;
 
-    public MessageFiltering(List<Filter> filters, Callbacks callbacks, Forwarder forwarder) {
+    public Filtering(List<Filter> filters, Callbacks callbacks, Forwarder forwarder) {
         super(callbacks, forwarder);
         this.filters = filters;
     }
