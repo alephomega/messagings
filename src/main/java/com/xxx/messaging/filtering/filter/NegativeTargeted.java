@@ -3,7 +3,7 @@ package com.xxx.messaging.filtering.filter;
 import com.xxx.messaging.Messaging;
 import com.xxx.messaging.filtering.Filter;
 
-class TokenUnavailable implements Filter {
+public class NegativeTargeted implements Filter {
 
     @Override
     public boolean accept(Messaging message) {
@@ -12,6 +12,6 @@ class TokenUnavailable implements Filter {
 
     @Override
     public String name() {
-        return "Token Unavailable";
+        return "Negative Targeted";
     }
 }

@@ -24,7 +24,7 @@ public class Forwarder {
         this.queueUrl = queueUrl;
     }
 
-    void forward(Message message) {
+    void forward(PhaseContext context, Messaging message) {
         sqs.sendMessage(new SendMessageRequest(queueUrl, GSON.toJson(message)));
     }
 }

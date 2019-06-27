@@ -3,6 +3,7 @@ package com.xxx.messaging;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.xxx.messaging.filtering.Filtering;
+import com.xxx.messaging.hook.OK;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-public class FilteringController {
+public class PhaseController {
 
     private static final Gson GSON = new GsonBuilder()
             .setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
@@ -22,23 +23,42 @@ public class FilteringController {
     private final Filtering filtering;
 
     @Autowired
-    public FilteringController(Filtering filtering) {
+    public PhaseController(Filtering filtering) {
         this.filtering = filtering;
     }
 
-    @RequestMapping(value="/message", method = RequestMethod.POST)
+    @RequestMapping(value="/filtering", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<String> onMessage(@RequestHeader HttpHeaders headers, @RequestBody String body) throws Exception {
         log.info("message: {}", body);
 
-        Message message;
+        Messaging messaging;
         try {
-            message = GSON.fromJson(body, Message.class);
+            messaging = GSON.fromJson(body, Messaging.class);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        filtering.run(message);
+        filtering.run(buildContext(messaging.getReplay(), messaging.getFiltering()), messaging);
+
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private PhaseContext buildContext(int reply, Callbacks callbacks) {
+        Hook before = OK.getInstance();
+        Hook after = OK.getInstance();
+
+        if (callbacks != null) {
+            if (callbacks.getBefore() != null) {
+                before = callbacks.getBefore();
+            }
+
+            if (callbacks.getAfter() != null) {
+                after = callbacks.getAfter();
+            }
+        }
+
+        Status status = reply > 0 ? Status.AGAIN : Status.OK;
+        return PhaseContext.builder().before(before).after(after).status(status).build();
     }
 }

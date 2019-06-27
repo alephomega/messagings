@@ -6,13 +6,15 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class Message {
+public class Messaging {
+    private int replay = 0;
+
     private String group;
     private String id;
 
-    private Phase.Callbacks partitioning;
-    private Phase.Callbacks filtering;
-    private Phase.Callbacks sending;
+    private Callbacks partitioning;
+    private Callbacks filtering;
+    private Callbacks sending;
 
     private List<String> to;
     private Map<String, ?> data;

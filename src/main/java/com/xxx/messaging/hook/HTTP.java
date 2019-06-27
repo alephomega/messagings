@@ -1,6 +1,10 @@
 package com.xxx.messaging.hook;
 
+import com.xxx.messaging.Hook;
+import com.xxx.messaging.HookFailedException;
+import com.xxx.messaging.Status;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Retryable;
@@ -9,15 +13,15 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 @Getter
-public class HTTP extends AbstractHook {
+public class HTTP extends Hook {
     private RestTemplate restTemplate;
     private String url;
     private String method;
     private Map<String, String> headers;
 
     @Builder
-    HTTP(RestTemplate restTemplate, String url, String method, Map<String, String> headers, ReturnCode onSuccess, ReturnCode onFailure) {
-        super(onSuccess, onFailure);
+    HTTP(RestTemplate restTemplate, String url, String method, Map<String, String> headers, Status onError) {
+        super(onError);
         this.restTemplate = restTemplate;
         this.url = url;
         this.method = method;
@@ -25,12 +29,26 @@ public class HTTP extends AbstractHook {
     }
 
     @Override
-    @Retryable
-    public boolean call(String id, String message) {
+    public Status call(String message) throws HookFailedException {
         HttpEntity<String> entity = new HttpEntity<>(message, httpHeaders());
 
-        ResponseEntity<String> result = restTemplate.exchange(url, HttpMethod.resolve(method), entity, String.class);
-        return result.getStatusCode().is2xxSuccessful();
+        ResponseEntity<Response> result = exchange(entity);
+        HttpStatus statusCode = result.getStatusCode();
+        if (!statusCode.is2xxSuccessful()) {
+            throw new HookFailedException("HTTP hook failed: " + statusCode.getReasonPhrase());
+        }
+
+        Status status = result.getBody().getStatus();
+        if (status == null) {
+            throw new HookFailedException("HTTP hook failed: null status");
+        }
+
+        return status;
+    }
+
+    @Retryable
+    private ResponseEntity<Response> exchange(HttpEntity<String> entity) {
+        return restTemplate.exchange(url, HttpMethod.resolve(method), entity, Response.class);
     }
 
     private HttpHeaders httpHeaders() {
@@ -43,5 +61,10 @@ public class HTTP extends AbstractHook {
         headers.setCacheControl(CacheControl.noCache());
 
         return headers;
+    }
+
+    @Data
+    private static class Response {
+        private Status status;
     }
 }

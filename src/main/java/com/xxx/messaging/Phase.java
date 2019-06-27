@@ -2,56 +2,35 @@ package com.xxx.messaging;
 
 import lombok.Data;
 
-import java.util.Map;
-
+@Data
 public abstract class Phase {
-    private final Callbacks callbacks;
-    private final Forwarder forwarder;
+    private PhaseContext context;
+    private Forwarder forwarder;
 
-    protected Phase(Callbacks callbacks, Forwarder forwarder) {
-        this.callbacks = callbacks;
+    protected Phase(PhaseContext context, Forwarder forwarder) {
+        this.context = context;
         this.forwarder = forwarder;
     }
 
-    protected Hook.ReturnCode before(Message message, Map<String, ?> args) {
-        return callbacks.execute(callbacks.getBefore(), message, args);
+    public void run(PhaseContext context, Messaging messaging) {
+        before(context, messaging);
+        execute(context, messaging);
+        after(context, messaging);
+
+        forward(context, messaging);
     }
 
-    protected Hook.ReturnCode after(Message message, Map<String, ?> args) {
-        return callbacks.execute(callbacks.getAfter(), message, args);
+    protected abstract void execute(PhaseContext context, Messaging messaging);
+
+    private void before(PhaseContext context, Messaging messaging) {
+        context.setStatus(context.getBefore().execute(messaging, context.getStatus()));
     }
 
-    protected Hook.ReturnCode error(Message message, Map<String, ?> args) {
-        return callbacks.execute(callbacks.getError(), message, args);
+    private void after(PhaseContext context, Messaging messaging) {
+        context.setStatus(context.getAfter().execute(messaging, context.getStatus()));
     }
 
-    protected void forward(Message message) {
-        forwarder.forward(message);
-    }
-
-    public abstract void run(Message message);
-
-
-    @Data
-    protected static class Callbacks {
-        private Hook before;
-        private Hook after;
-        private Hook error;
-
-        public Hook.ReturnCode before(Message message, Map<String, ?> args) {
-            return execute(before, message, args);
-        }
-
-        public Hook.ReturnCode after(Message message, Map<String, ?> args) {
-            return execute(after, message, args);
-        }
-
-        public Hook.ReturnCode error(Message message, Map<String, ?> args) {
-            return execute(error, message, args);
-        }
-
-        private Hook.ReturnCode execute(Hook hook, Message message, Map<String, ?> args) {
-            return hook == null ? Hook.ReturnCode.OK : hook.execute(message, args);
-        }
+    private void forward(PhaseContext context, Messaging message) {
+        forwarder.forward(context, message);
     }
 }

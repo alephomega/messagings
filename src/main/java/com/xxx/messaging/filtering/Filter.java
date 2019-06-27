@@ -1,9 +1,9 @@
 package com.xxx.messaging.filtering;
 
-import com.xxx.messaging.Message;
+import com.xxx.messaging.Messaging;
 
 public interface Filter {
-    boolean accept(Message message);
+    boolean accept(Messaging message);
     String name();
 }
 
