@@ -1,7 +1,5 @@
 package com.xxx.messaging;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.xxx.messaging.filtering.Filtering;
 import com.xxx.messaging.hook.OK;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +12,6 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 public class PhaseController {
-
-    private static final Gson GSON = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
-            .disableHtmlEscaping()
-            .create();
-
     private final Filtering filtering;
 
     @Autowired
@@ -34,7 +26,7 @@ public class PhaseController {
 
         Messaging messaging;
         try {
-            messaging = GSON.fromJson(body, Messaging.class);
+            messaging = MessagingJsonSerde.fromJson(body);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
