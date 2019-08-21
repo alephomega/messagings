@@ -1,36 +1,68 @@
 package com.xxx.messaging;
 
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+import java.lang.reflect.Field;
+import java.util.Map;
+
+@Getter
 public abstract class Phase {
-    private PhaseContext context;
-    private Forwarder forwarder;
-
-    protected Phase(PhaseContext context, Forwarder forwarder) {
-        this.context = context;
-        this.forwarder = forwarder;
+    Notification run(Context context, Notification notification) {
+        return after(context, process(context, before(context, notification)));
     }
 
-    public void run(PhaseContext context, Messaging messaging) {
-        before(context, messaging);
-        execute(context, messaging);
-        after(context, messaging);
+    private Notification process(Context context, Notification notification) {
+        if (context.getStatus() != Status.OK) {
+            return notification;
+        }
 
-        forward(context, messaging);
+        return execute(context, notification);
     }
 
-    protected abstract void execute(PhaseContext context, Messaging messaging);
 
-    private void before(PhaseContext context, Messaging messaging) {
-        context.setStatus(context.getBefore().execute(messaging, context.getStatus()));
+    private Notification before(Context context, Notification notification) {
+        Hook.Response response = context.getBefore().execute(notification, context.getStatus());
+        context.setStatus(response.getStatus());
+
+        Map<String, ?> message = response.getMessage();
+        if (message != null) {
+            notification.setMessage(message);
+        }
+
+        return notification;
     }
 
-    private void after(PhaseContext context, Messaging messaging) {
-        context.setStatus(context.getAfter().execute(messaging, context.getStatus()));
+    private Notification after(Context context, Notification notification) {
+        if (context.getStatus() != Status.OK) {
+            return notification;
+        }
+
+        Hook.Response response = context.getAfter().execute(notification, context.getStatus());
+        context.setStatus(response.getStatus());
+
+        Map<String, ?> message = response.getMessage();
+        if (message != null) {
+            notification.setMessage(message);
+        }
+
+        return notification;
     }
 
-    private void forward(PhaseContext context, Messaging message) {
-        forwarder.forward(context, message);
+    Hooks callbacks(Messaging messaging) {
+        Messaging.Callbacks callbacks = messaging.getCallbacks();
+        if (callbacks != null) {
+            try {
+                Field field = callbacks.getClass().getField(name());
+                Object value = field.get(callbacks);
+                if (value != null) {
+                    return (Hooks) value;
+                }
+            } catch (Exception ignore) { }
+        }
+
+        return null;
     }
+
+    public abstract String name();
+    public abstract Notification execute(Context context, Notification notification);
 }

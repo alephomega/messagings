@@ -1,13 +1,15 @@
 package com.xxx.messaging.filtering.filter;
 
-import com.xxx.messaging.Messaging;
-import com.xxx.messaging.PhaseContext;
+import com.xxx.messaging.Context;
+import com.xxx.messaging.Notification;
 import com.xxx.messaging.filtering.Filter;
+import org.springframework.stereotype.Component;
 
+@Component
 class TokenUnavailable implements Filter {
 
     @Override
-    public boolean accept(PhaseContext context, Messaging messaging) {
+    public boolean accept(Context context, Notification notification) {
         return true;
     }
 

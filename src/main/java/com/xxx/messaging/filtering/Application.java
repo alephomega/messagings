@@ -1,4 +1,4 @@
-package com.xxx.messaging;
+package com.xxx.messaging.filtering;
 
 
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -15,6 +15,7 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer {
@@ -48,7 +49,7 @@ public class Application extends SpringBootServletInitializer {
 
         RestTemplate restTemplate = new RestTemplate(factory);
         restTemplate.getMessageConverters()
-                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+                .add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
 
         return restTemplate;
     }
@@ -60,5 +61,3 @@ public class Application extends SpringBootServletInitializer {
                 .build();
     }
 }
-
-

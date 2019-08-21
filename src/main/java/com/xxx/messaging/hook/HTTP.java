@@ -3,8 +3,8 @@ package com.xxx.messaging.hook;
 import com.xxx.messaging.Hook;
 import com.xxx.messaging.HookFailedException;
 import com.xxx.messaging.Status;
+import com.xxx.messaging.Symbol;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Retryable;
@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 @Getter
+@Symbol("HTTP")
 public class HTTP extends Hook {
     private RestTemplate restTemplate;
     private String url;
@@ -29,26 +30,32 @@ public class HTTP extends Hook {
     }
 
     @Override
-    public Status call(String message) throws HookFailedException {
+    public Hook.Response call(String message) throws HookFailedException {
         HttpEntity<String> entity = new HttpEntity<>(message, httpHeaders());
 
-        ResponseEntity<Response> result = exchange(entity);
+        ResponseEntity<Hook.Response> result = exchange(entity);
         HttpStatus statusCode = result.getStatusCode();
         if (!statusCode.is2xxSuccessful()) {
             throw new HookFailedException("HTTP hook failed: " + statusCode.getReasonPhrase());
         }
 
-        Status status = result.getBody().getStatus();
-        if (status == null) {
-            throw new HookFailedException("HTTP hook failed: null status");
+        Response body = result.getBody();
+        if (body == null) {
+            throw new HookFailedException("HTTP hook failed: Response body cannot be null");
         }
 
-        return status;
+        Status status = body.getStatus();
+        if (status == null) {
+            throw new HookFailedException("HTTP hook failed: Response status cannot be null");
+        }
+
+        return body;
     }
 
     @Retryable
-    private ResponseEntity<Response> exchange(HttpEntity<String> entity) {
-        return restTemplate.exchange(url, HttpMethod.resolve(method), entity, Response.class);
+    private ResponseEntity<Hook.Response> exchange(HttpEntity<String> entity) {
+        HttpMethod httpMethod = HttpMethod.resolve(method);
+        return restTemplate.exchange(url, httpMethod == null ? HttpMethod.POST : httpMethod, entity, Hook.Response.class);
     }
 
     private HttpHeaders httpHeaders() {
@@ -61,10 +68,5 @@ public class HTTP extends Hook {
         headers.setCacheControl(CacheControl.noCache());
 
         return headers;
-    }
-
-    @Data
-    private static class Response {
-        private Status status;
     }
 }

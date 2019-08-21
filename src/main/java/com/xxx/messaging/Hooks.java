@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class Callbacks {
+public class Hooks {
     private Hook before;
     private Hook after;
 }

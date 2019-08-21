@@ -21,6 +21,13 @@ hook:
     read-timeout: 2000
 
 
-forwarding:
+partitioning:
+  kinesis:
+    stream:
+
+
+filtering:
   sqs:
-    url:
+    next-phase:
+    replay:
+

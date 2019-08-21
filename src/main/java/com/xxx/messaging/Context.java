@@ -10,7 +10,7 @@ import java.util.Map;
 @Builder
 @Getter
 @Setter
-public class PhaseContext {
+public class Context {
 
     @Builder.Default
     private Map<String, ?> attributes = new HashMap<>();

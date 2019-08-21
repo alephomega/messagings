@@ -1,56 +1,28 @@
 package com.xxx.messaging;
 
-import com.xxx.messaging.filtering.Filtering;
-import com.xxx.messaging.hook.OK;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 @Slf4j
-@RestController
-public class PhaseController {
-    private final Filtering filtering;
+abstract class PhaseController {
+    private final Processor processor;
 
-    @Autowired
-    public PhaseController(Filtering filtering) {
-        this.filtering = filtering;
+    PhaseController(Processor processor) {
+        this.processor = processor;
     }
 
-    @RequestMapping(value="/filtering", method = RequestMethod.POST)
-    @ResponseBody
-    public ResponseEntity<String> onMessage(@RequestHeader HttpHeaders headers, @RequestBody String body) throws Exception {
+    ResponseEntity<String> process(String body) {
         log.info("message: {}", body);
 
         Messaging messaging;
         try {
-            messaging = MessagingJsonSerde.fromJson(body);
+            messaging = JsonSerde.jsonToMessaging(body);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        filtering.run(buildContext(messaging.getReplay(), messaging.getFiltering()), messaging);
-
+        processor.process(messaging);
         return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-    private PhaseContext buildContext(int reply, Callbacks callbacks) {
-        Hook before = OK.getInstance();
-        Hook after = OK.getInstance();
-
-        if (callbacks != null) {
-            if (callbacks.getBefore() != null) {
-                before = callbacks.getBefore();
-            }
-
-            if (callbacks.getAfter() != null) {
-                after = callbacks.getAfter();
-            }
-        }
-
-        Status status = reply > 0 ? Status.AGAIN : Status.OK;
-        return PhaseContext.builder().before(before).after(after).status(status).build();
     }
 }
