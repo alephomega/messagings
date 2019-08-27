@@ -14,7 +14,7 @@ public class Sending extends Phase {
     }
 
     @Override
-    public Notification execute(Context context, Notification notification) {
+    public Notification handle(Context context, Notification notification) {
         return sender.run(notification);
     }
 

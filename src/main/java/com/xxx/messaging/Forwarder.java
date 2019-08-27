@@ -2,14 +2,12 @@ package com.xxx.messaging;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 
-public class Forwarder {
+class Forwarder {
     private final AmazonSQS sqs;
     private final String done;
     private final String replay;
 
-    public Forwarder(AmazonSQS sqs,
-                     String done,
-                     String replay) {
+    Forwarder(AmazonSQS sqs, String done, String replay) {
         this.sqs = sqs;
         this.done = done;
         this.replay = replay;
@@ -18,25 +16,23 @@ public class Forwarder {
     void forward(Context context, Messaging messaging) {
         switch (context.getStatus()) {
             case OK:
-                ok(messaging);
+                ok(context, messaging);
                 break;
             case AGAIN:
-                replay(messaging);
+                again(context, messaging);
                 break;
+            case UNKNOWN:
             case ABORT:
         }
     }
 
-    private void ok(Messaging messaging) {
-        messaging.reset();
+    private void ok(Context context, Messaging messaging) {
+        messaging.setMetadata(context.getMetadata());
         sqs.sendMessage(done, JsonSerde.messagingToJson(messaging));
     }
 
-    private void replay(Messaging messaging) {
-        Messaging.Metadata metadata = messaging.getMetadata();
-        int r = metadata.getReplay() + 1;
-        metadata.setReplay(r);
-
+    private void again(Context context, Messaging messaging) {
+        messaging.setMetadata(context.getMetadata());
         sqs.sendMessage(replay, JsonSerde.messagingToJson(messaging));
     }
 }

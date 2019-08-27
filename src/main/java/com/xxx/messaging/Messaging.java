@@ -20,9 +20,6 @@ class Messaging {
     private Callbacks callbacks;
     private Metadata metadata;
 
-    void reset() {
-        this.metadata = new Metadata();
-    }
 
     @Setter
     @Getter
@@ -30,11 +27,5 @@ class Messaging {
         private Hooks partitioning;
         private Hooks filtering;
         private Hooks sending;
-    }
-
-    @Setter
-    @Getter
-    static class Metadata {
-        private int replay = 0;
     }
 }

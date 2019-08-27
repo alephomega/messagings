@@ -1,11 +1,13 @@
 package com.xxx.messaging;
 
 import com.xxx.messaging.hook.OK;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
 
+@Slf4j
 @Component
 class Processor {
     private final Phase phase;
@@ -21,26 +23,38 @@ class Processor {
         this.processListeners = processListeners;
     }
 
-    void process(Messaging messaging) {
+    Stat process(Messaging messaging) {
         Hooks hooks = callbacks(messaging);
-        Context context = Context.builder().before(hooks.getBefore()).after(hooks.getAfter()).build();
+        Context context = Context.builder()
+                .before(hooks.getBefore())
+                .after(hooks.getAfter())
+                .metadata(messaging.getMetadata())
+                .build();
 
         onContextInitialized(context);
 
         String name = phase.name();
         onBefore(name, messaging, context);
 
-        Iterator<Notification> iterator = iterator(messaging);
-        while(iterator.hasNext()) {
-            Notification notification = iterator.next();
-            onBefore(name, notification, context);
-            notification = phase.run(context, notification);
-            onAfter(name, notification, context);
+        try {
+            Iterator<Notification> iterator = iterator(messaging);
+            while (iterator.hasNext()) {
+                Notification notification = iterator.next();
+                onBefore(name, notification, context);
+                notification = phase.process(context, notification, messaging.getMetadata());
+                onAfter(name, notification, context);
 
-            forwarder.forward(context, toMessaging(notification, messaging.getCallbacks(), null));
+                forward(context, toMessaging(notification, messaging.getCallbacks()));
+                context.next();
+            }
+
+            onAfter(name, messaging, context);
+        } catch (Exception e) {
+            forward(context.error(), messaging);
+            onError(name, messaging, context);
         }
 
-        onAfter(name, messaging, context);
+        return StatisticsCollector.stat(context);
     }
 
     private Iterator<Notification> iterator(Messaging messaging) {
@@ -84,7 +98,75 @@ class Processor {
         return new Hooks(before, after);
     }
 
-    private Messaging toMessaging(Notification notification, Messaging.Callbacks callbacks, Messaging.Metadata metadata) {
+    private void forward(Context context, Messaging messaging) {
+        try {
+            forwarder.forward(context, messaging);
+        } catch (Exception e) {
+
+        }
+    }
+
+    private void onContextInitialized(Context context) {
+        for (ProcessListener processListener : processListeners) {
+            try {
+                processListener.onContextInitiated(context);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private void onBefore(String phase, Messaging messaging, Context context) {
+        for (ProcessListener processListener : processListeners) {
+            try {
+                processListener.onBefore(phase, messaging, context);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private void onAfter(String phase, Messaging messaging, Context context) {
+        for (ProcessListener processListener : processListeners) {
+            try {
+                processListener.onAfter(phase, messaging, context);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private void onBefore(String phase, Notification notification, Context context) {
+        for (ProcessListener processListener : processListeners) {
+            try {
+                processListener.onBefore(phase, notification, context);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private void onAfter(String phase, Notification notification, Context context) {
+        for (ProcessListener processListener : processListeners) {
+            try {
+                processListener.onAfter(phase, notification, context);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private void onError(String phase, Messaging messaging, Context context) {
+        for (ProcessListener processListener : processListeners) {
+            try {
+                processListener.onError(phase, messaging, context);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private Messaging toMessaging(Notification notification, Messaging.Callbacks callbacks) {
         return Messaging.builder()
                 .topic(notification.getTopic())
                 .id(notification.getId())
@@ -92,37 +174,6 @@ class Processor {
                 .collapseKey(notification.getCollapseKey())
                 .message(notification.getMessage())
                 .callbacks(callbacks)
-                .metadata(metadata)
                 .build();
-    }
-
-    private void onContextInitialized(Context context) {
-        for (ProcessListener processListener : processListeners) {
-            processListener.onContextInitiated(context);
-        }
-    }
-
-    private void onBefore(String phase, Messaging messaging, Context context) {
-        for (ProcessListener processListener : processListeners) {
-            processListener.onBefore(phase, messaging, context);
-        }
-    }
-
-    private void onAfter(String phase, Messaging messaging, Context context) {
-        for (ProcessListener processListener : processListeners) {
-            processListener.onAfter(phase, messaging, context);
-        }
-    }
-
-    private void onBefore(String phase, Notification notification, Context context) {
-        for (ProcessListener processListener : processListeners) {
-            processListener.onBefore(phase, notification, context);
-        }
-    }
-
-    private void onAfter(String phase, Notification notification, Context context) {
-        for (ProcessListener processListener : processListeners) {
-            processListener.onAfter(phase, notification, context);
-        }
     }
 }

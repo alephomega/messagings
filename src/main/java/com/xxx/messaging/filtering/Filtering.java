@@ -18,7 +18,7 @@ public class Filtering extends Phase {
     }
 
     @Override
-    public Notification execute(Context context, Notification notification) {
+    public Notification handle(Context context, Notification notification) {
         for (Filter filter : filters) {
             if (!filter.accept(context, notification)) {
                 log.info(String.format("Message (id: %s, group: %s) filtered by '%s' filter", notification.getTopic(), notification.getId(), filter.name()));

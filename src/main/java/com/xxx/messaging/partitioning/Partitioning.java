@@ -18,7 +18,7 @@ public class Partitioning extends Phase {
     }
 
     @Override
-    public Notification execute(Context context, Notification notification) {
+    public Notification handle(Context context, Notification notification) {
         return partitioner.run(notification);
     }
 
