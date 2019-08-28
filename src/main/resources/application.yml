@@ -21,13 +21,13 @@ hook:
     read-timeout: 2000
 
 
-partitioning:
-  kinesis:
-    stream:
+reporting:
+    stream: ${REPORTING_STREAM:IDN-messagings-reporting}
 
+partitioning:
+    stream: ${PARTITIONING_STREAM:IDN-messagings}
 
 filtering:
-  sqs:
-    next-phase:
-    replay:
+    next-phase: ${NEXT_PHASE_QUEUE}
+    replay: ${REPLAY_QUEUE}
 

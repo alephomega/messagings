@@ -3,6 +3,7 @@ package com.xxx.messaging;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
@@ -14,7 +15,7 @@ public class ProgressReporter implements ProcessListener {
     private final String stream;
 
     @Autowired
-    ProgressReporter(AmazonKinesis kinesis, String stream) {
+    ProgressReporter(AmazonKinesis kinesis, @Value("${reporting.stream}") String stream) {
         this.kinesis = kinesis;
         this.stream = stream;
     }

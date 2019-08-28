@@ -4,17 +4,15 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.xxx.messaging.Hook;
 import com.xxx.messaging.Status;
-import com.xxx.messaging.Symbol;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
-@Symbol("SQS")
+@Setter
 public class SQS extends Hook {
     private AmazonSQS sqs;
     private String url;
 
-    @Builder
     SQS(AmazonSQS sqs, String url, Status onError) {
         super(onError);
         this.sqs = sqs;
@@ -22,7 +20,7 @@ public class SQS extends Hook {
     }
 
     @Override
-    public Hook.Response call(String message) {
+    public Hook.Response call(String to, String message) {
         sqs.sendMessage(new SendMessageRequest(url, message));
         return new Hook.Response(Status.OK);
     }

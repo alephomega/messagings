@@ -13,9 +13,7 @@ import java.util.Map;
 @Setter
 public abstract class Hook {
     private static final Gson GSON = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
-            .disableHtmlEscaping()
-            .create();
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").disableHtmlEscaping().create();
 
     private Status onError;
 
@@ -32,13 +30,13 @@ public abstract class Hook {
                 "status", status));
 
         try {
-            return call(message);
+            return call(notification.getTo(), message);
         } catch (Exception e) {
             return new Response(onError, null);
         }
     }
 
-    public abstract Response call(String message) throws HookFailedException;
+    public abstract Response call(String to, String message) throws HookFailedException;
 
     @Data
     public static class Response {

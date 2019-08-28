@@ -3,25 +3,24 @@ package com.xxx.messaging.hook;
 import com.xxx.messaging.Hook;
 import com.xxx.messaging.HookFailedException;
 import com.xxx.messaging.Status;
-import com.xxx.messaging.Symbol;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 @Getter
-@Symbol("HTTP")
+@Setter
 public class HTTP extends Hook {
     private RestTemplate restTemplate;
     private String url;
     private String method;
-    private Map<String, String> headers;
+    private Map<String, List<String>> headers;
 
-    @Builder
-    HTTP(RestTemplate restTemplate, String url, String method, Map<String, String> headers, Status onError) {
+    HTTP(RestTemplate restTemplate, String url, String method, Map<String, List<String>> headers, Status onError) {
         super(onError);
         this.restTemplate = restTemplate;
         this.url = url;
@@ -30,7 +29,7 @@ public class HTTP extends Hook {
     }
 
     @Override
-    public Hook.Response call(String message) throws HookFailedException {
+    public Hook.Response call(String to, String message) throws HookFailedException {
         HttpEntity<String> entity = new HttpEntity<>(message, httpHeaders());
 
         ResponseEntity<Hook.Response> result = exchange(entity);
@@ -61,7 +60,7 @@ public class HTTP extends Hook {
     private HttpHeaders httpHeaders() {
         HttpHeaders headers = new HttpHeaders();
         if (this.headers != null) {
-            this.headers.forEach(headers::add);
+            this.headers.forEach(headers::addAll);
         }
 
         headers.setContentType(MediaType.APPLICATION_JSON);

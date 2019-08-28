@@ -1,48 +1,42 @@
 package com.xxx.messaging;
 
-import com.google.gson.*;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class HookJsonDeserializer implements JsonDeserializer<Hook> {
-    private static final Map<String, Class<? extends Hook>> hookClasses = new HashMap<>();
+    private final Map<String, HookFactory> factories = new HashMap<>();
 
-    static {
-        List<Class> classes = PackageScanner.getSubTypesOf("com.xxx.messaging", Hook.class);
-        for (Class<? extends Hook> hookClass : classes) {
-            String identifier = symbolOf(hookClass);
-            if (identifier != null) {
-                hookClasses.put(identifier, hookClass);
-            }
-        }
-    }
-
-    private static String symbolOf(Class<? extends Hook> clss) {
-        Symbol symbol = clss.getAnnotation(Symbol.class);
-        if (symbol == null) {
-            return null;
-        }
-
-        return symbol.value();
-    }
-
-    private static Class<? extends Hook> findClass(String name) {
-        return hookClasses.get(name);
+    @Autowired
+    public HookJsonDeserializer(List<HookFactory> factories) {
+        factories.forEach(factory -> this.factories.put(factory.hookClass().getSimpleName(), factory));
     }
 
     @Override
     public Hook deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        JsonObject hookJson = json.getAsJsonObject();
-        String symbol = hookJson.get("type").getAsString();
+        String type = null;
+        try {
+            type = json.getAsJsonObject().get("type").getAsString();
+        } catch (NullPointerException ignore) { }
 
-        Class<? extends Hook> clss = findClass(symbol);
-        if (clss == null) {
-            throw new JsonParseException(String.format("No hook with symbol: %s was found", symbol));
+        HookFactory factory = factoryOf(type);
+        if (factory == null) {
+            throw new JsonParseException(String.format("No hook factory found for %s", type));
         }
 
-        return context.deserialize(hookJson, clss);
+        return factory.create(json);
+    }
+
+    private HookFactory factoryOf(String name) {
+        return name != null ? factories.get(name) : null;
     }
 }

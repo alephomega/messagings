@@ -1,13 +1,18 @@
 package com.xxx.messaging;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+@Component
 class Forwarder {
     private final AmazonSQS sqs;
     private final String done;
     private final String replay;
 
-    Forwarder(AmazonSQS sqs, String done, String replay) {
+    @Autowired
+    Forwarder(AmazonSQS sqs, @Value("${filtering.next-phase}") String done, @Value("${filtering.replay}") String replay) {
         this.sqs = sqs;
         this.done = done;
         this.replay = replay;
